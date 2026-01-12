@@ -60,6 +60,8 @@ use self::ast::ContractAST;
 use self::costs::ExecutionCost;
 use self::diagnostic::Diagnostic;
 use crate::vm::callables::CallableType;
+#[cfg(any(test, feature = "testing"))]
+use crate::vm::clarity::ClarityError;
 pub use crate::vm::contexts::{
     CallStack, ContractContext, Environment, LocalContext, MAX_CONTEXT_DEPTH,
 };
@@ -70,8 +72,6 @@ use crate::vm::costs::{
 };
 // publish the non-generic StacksEpoch form for use throughout module
 pub use crate::vm::database::clarity_db::StacksEpoch;
-#[cfg(any(test, feature = "testing"))]
-use crate::vm::errors::ClarityEvalError;
 use crate::vm::errors::{CheckErrorKind, RuntimeError, VmExecutionError, VmInternalError};
 use crate::vm::events::StacksTransactionEvent;
 use crate::vm::functions::define::DefineResult;
@@ -500,10 +500,7 @@ pub fn eval_all(
 /// This method executes the program in Epoch 2.0 *and* Epoch 2.05 and asserts
 /// that the result is the same before returning the result
 #[cfg(any(test, feature = "testing"))]
-pub fn execute_on_network(
-    program: &str,
-    use_mainnet: bool,
-) -> Result<Option<Value>, ClarityEvalError> {
+pub fn execute_on_network(program: &str, use_mainnet: bool) -> Result<Option<Value>, ClarityError> {
     let epoch_200_result = execute_with_parameters(
         program,
         ClarityVersion::Clarity2,
@@ -535,7 +532,7 @@ pub fn execute_with_parameters_and_call_in_global_context<F, G>(
     sender: clarity_types::types::StandardPrincipalData,
     mut before_function: F,
     mut after_function: G,
-) -> Result<Option<Value>, ClarityEvalError>
+) -> Result<Option<Value>, ClarityError>
 where
     F: FnMut(&mut GlobalContext) -> Result<(), VmExecutionError>,
     G: FnMut(&mut GlobalContext) -> Result<(), VmExecutionError>,
@@ -573,7 +570,7 @@ where
             after_function(g)?;
             res
         })
-        .map_err(ClarityEvalError::from)
+        .map_err(ClarityError::from)
 }
 
 #[cfg(any(test, feature = "testing"))]
@@ -582,7 +579,7 @@ pub fn execute_with_parameters(
     clarity_version: ClarityVersion,
     epoch: StacksEpochId,
     use_mainnet: bool,
-) -> Result<Option<Value>, ClarityEvalError> {
+) -> Result<Option<Value>, ClarityError> {
     execute_with_parameters_and_call_in_global_context(
         program,
         clarity_version,
@@ -599,13 +596,13 @@ pub fn execute_with_parameters(
 pub fn execute_against_version(
     program: &str,
     version: ClarityVersion,
-) -> Result<Option<Value>, ClarityEvalError> {
+) -> Result<Option<Value>, ClarityError> {
     execute_with_parameters(program, version, StacksEpochId::Epoch20, false)
 }
 
 /// Execute for test in Clarity1, Epoch20, testnet.
 #[cfg(any(test, feature = "testing"))]
-pub fn execute(program: &str) -> Result<Option<Value>, ClarityEvalError> {
+pub fn execute(program: &str) -> Result<Option<Value>, ClarityError> {
     execute_with_parameters(
         program,
         ClarityVersion::Clarity1,
@@ -619,7 +616,7 @@ pub fn execute(program: &str) -> Result<Option<Value>, ClarityEvalError> {
 pub fn execute_with_limited_execution_time(
     program: &str,
     max_execution_time: std::time::Duration,
-) -> Result<Option<Value>, ClarityEvalError> {
+) -> Result<Option<Value>, ClarityError> {
     execute_with_parameters_and_call_in_global_context(
         program,
         ClarityVersion::Clarity1,
@@ -636,7 +633,7 @@ pub fn execute_with_limited_execution_time(
 
 /// Execute for test in Clarity2, Epoch21, testnet.
 #[cfg(any(test, feature = "testing"))]
-pub fn execute_v2(program: &str) -> Result<Option<Value>, ClarityEvalError> {
+pub fn execute_v2(program: &str) -> Result<Option<Value>, ClarityError> {
     execute_with_parameters(
         program,
         ClarityVersion::Clarity2,

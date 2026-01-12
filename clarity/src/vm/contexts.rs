@@ -19,7 +19,7 @@ use std::fmt;
 use std::mem::replace;
 use std::time::{Duration, Instant};
 
-use clarity_types::errors::{ParseError, ParseErrorKind};
+use clarity_types::errors::ParseErrorKind;
 use clarity_types::representations::ClarityName;
 use serde::Serialize;
 use serde_json::json;
@@ -29,6 +29,7 @@ use stacks_common::types::chainstate::StacksBlockId;
 use super::EvalHook;
 use crate::vm::ast::ContractAST;
 use crate::vm::callables::{DefinedFunction, FunctionIdentifier};
+use crate::vm::clarity::ClarityError;
 use crate::vm::contracts::Contract;
 use crate::vm::costs::cost_functions::ClarityCostFunction;
 use crate::vm::costs::{CostErrors, CostTracker, ExecutionCost, LimitedCostTracker, runtime_cost};
@@ -37,7 +38,7 @@ use crate::vm::database::{
     NonFungibleTokenMetadata,
 };
 use crate::vm::errors::{
-    CheckErrorKind, ClarityEvalError, RuntimeError, StackTrace, VmExecutionError, VmInternalError,
+    CheckErrorKind, RuntimeError, StackTrace, VmExecutionError, VmInternalError,
 };
 use crate::vm::events::*;
 use crate::vm::representations::SymbolicExpression;
@@ -723,7 +724,7 @@ impl<'a, 'hooks> OwnedEnvironment<'a, 'hooks> {
         contract_identifier: QualifiedContractIdentifier,
         contract_content: &str,
         sponsor: Option<PrincipalData>,
-    ) -> Result<((), AssetMap, Vec<StacksTransactionEvent>), ClarityEvalError> {
+    ) -> Result<((), AssetMap, Vec<StacksTransactionEvent>), ClarityError> {
         self.execute_in_env(
             contract_identifier.issuer.clone().into(),
             sponsor,
@@ -738,7 +739,7 @@ impl<'a, 'hooks> OwnedEnvironment<'a, 'hooks> {
         version: ClarityVersion,
         contract_content: &str,
         sponsor: Option<PrincipalData>,
-    ) -> Result<((), AssetMap, Vec<StacksTransactionEvent>), ClarityEvalError> {
+    ) -> Result<((), AssetMap, Vec<StacksTransactionEvent>), ClarityError> {
         self.execute_in_env(
             contract_identifier.issuer.clone().into(),
             sponsor,
@@ -832,7 +833,7 @@ impl<'a, 'hooks> OwnedEnvironment<'a, 'hooks> {
     pub fn eval_raw(
         &mut self,
         program: &str,
-    ) -> Result<(Value, AssetMap, Vec<StacksTransactionEvent>), ClarityEvalError> {
+    ) -> Result<(Value, AssetMap, Vec<StacksTransactionEvent>), ClarityError> {
         self.execute_in_env(
             QualifiedContractIdentifier::transient().issuer.into(),
             None,
@@ -845,7 +846,7 @@ impl<'a, 'hooks> OwnedEnvironment<'a, 'hooks> {
         &mut self,
         contract: &QualifiedContractIdentifier,
         program: &str,
-    ) -> Result<(Value, AssetMap, Vec<StacksTransactionEvent>), ClarityEvalError> {
+    ) -> Result<(Value, AssetMap, Vec<StacksTransactionEvent>), ClarityError> {
         self.execute_in_env(
             QualifiedContractIdentifier::transient().issuer.into(),
             None,
@@ -1015,7 +1016,7 @@ impl<'a, 'b, 'hooks> Environment<'a, 'b, 'hooks> {
         &mut self,
         contract_identifier: &QualifiedContractIdentifier,
         program: &str,
-    ) -> Result<Value, ClarityEvalError> {
+    ) -> Result<Value, ClarityError> {
         let parsed = ast::build_ast(
             contract_identifier,
             program,
@@ -1033,7 +1034,7 @@ impl<'a, 'b, 'hooks> Environment<'a, 'b, 'hooks> {
             // or transaction.
             // - Only malformed input fed directly to this internal method (e.g., in unit tests or
             // artificial VM invocations) can trigger this error.
-            return Err(ParseError::from(ParseErrorKind::UnexpectedParserFailure).into());
+            return Err(ParseErrorKind::UnexpectedParserFailure.into());
         }
 
         self.global_context.begin();
@@ -1059,14 +1060,14 @@ impl<'a, 'b, 'hooks> Environment<'a, 'b, 'hooks> {
             let local_context = LocalContext::new();
             eval(&parsed[0], &mut nested_env, &local_context)
         }
-        .map_err(ClarityEvalError::from);
+        .map_err(ClarityError::from);
 
         self.global_context.roll_back()?;
 
         result
     }
 
-    pub fn eval_raw(&mut self, program: &str) -> Result<Value, ClarityEvalError> {
+    pub fn eval_raw(&mut self, program: &str) -> Result<Value, ClarityError> {
         let contract_id = QualifiedContractIdentifier::transient();
         let clarity_version = self.contract_context.clarity_version;
 
@@ -1086,10 +1087,10 @@ impl<'a, 'b, 'hooks> Environment<'a, 'b, 'hooks> {
             // - Any empty or invalid program would be rejected at publish/deploy time or earlier parsing stages.
             // - Therefore, `parsed.is_empty()` cannot occur for a program that originates from a valid Clarity contract or transaction.
             // Only malformed input directly fed to this internal method (e.g., in unit tests) can trigger this error.
-            return Err(ParseError::from(ParseErrorKind::UnexpectedParserFailure).into());
+            return Err(ParseErrorKind::UnexpectedParserFailure.into());
         }
         let local_context = LocalContext::new();
-        eval(&parsed[0], self, &local_context).map_err(ClarityEvalError::from)
+        eval(&parsed[0], self, &local_context).map_err(ClarityError::from)
     }
 
     /// Used only for contract-call! cost short-circuiting. Once the short-circuited cost
@@ -1297,7 +1298,7 @@ impl<'a, 'b, 'hooks> Environment<'a, 'b, 'hooks> {
         &mut self,
         contract_identifier: QualifiedContractIdentifier,
         contract_content: &str,
-    ) -> Result<(), ClarityEvalError> {
+    ) -> Result<(), ClarityError> {
         let clarity_version = self.contract_context.clarity_version;
 
         let contract_ast = ast::build_ast(
@@ -1313,7 +1314,7 @@ impl<'a, 'b, 'hooks> Environment<'a, 'b, 'hooks> {
             &contract_ast,
             contract_content,
         )
-        .map_err(ClarityEvalError::from)
+        .map_err(ClarityError::from)
     }
 
     pub fn initialize_contract_from_ast(
@@ -1748,7 +1749,7 @@ impl<'a, 'hooks> GlobalContext<'a, 'hooks> {
         f: F,
     ) -> std::result::Result<A, E>
     where
-        E: From<ClarityEvalError>,
+        E: From<ClarityError>,
         F: FnOnce(&mut Environment) -> std::result::Result<A, E>,
     {
         self.begin();
@@ -1767,7 +1768,7 @@ impl<'a, 'hooks> GlobalContext<'a, 'hooks> {
             );
             f(&mut exec_env)
         };
-        self.roll_back().map_err(ClarityEvalError::from)?;
+        self.roll_back().map_err(ClarityError::from)?;
 
         match result {
             Ok(return_value) => Ok(return_value),
@@ -2414,8 +2415,7 @@ mod test {
         // Call eval_read_only with an empty program
         let program = ""; // empty program triggers parsed.is_empty()
         let err = env.eval_raw(program).unwrap_err();
-        let expected_err =
-            ClarityEvalError::from(ParseError::new(ParseErrorKind::UnexpectedParserFailure));
+        let expected_err: ClarityError = ParseErrorKind::UnexpectedParserFailure.into();
         assert!(matches!(err, expected_err), "Expected a type parse failure");
     }
 
@@ -2431,8 +2431,7 @@ mod test {
         // Call eval_read_only with an empty program
         let program = ""; // empty program triggers parsed.is_empty()
         let err = env.eval_read_only(&contract_id, program).unwrap_err();
-        let expected_err =
-            ClarityEvalError::from(ParseError::new(ParseErrorKind::UnexpectedParserFailure));
+        let expected_err: ClarityError = ParseErrorKind::UnexpectedParserFailure.into();
         assert!(matches!(err, expected_err), "Expected a type parse failure");
     }
 

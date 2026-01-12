@@ -36,9 +36,10 @@ use stacks_common::util::hash::to_hex;
 use crate::vm::analysis::type_checker::v2_1::natives::post_conditions::{
     MAX_ALLOWANCES, MAX_NFT_IDENTIFIERS,
 };
+use crate::vm::clarity::ClarityError;
 use crate::vm::contexts::GlobalContext;
 use crate::vm::database::STXBalance;
-use crate::vm::errors::{ClarityEvalError, VmExecutionError};
+use crate::vm::errors::VmExecutionError;
 use crate::vm::{ClarityVersion, execute_with_parameters_and_call_in_global_context};
 
 const DEFAULT_EPOCH: StacksEpochId = StacksEpochId::Epoch33;
@@ -80,7 +81,7 @@ fn initialize_balances(
 
 /// Execute a Clarity code snippet in a fresh global context with default
 /// parameters, setting up initial balances.
-pub fn execute(snippet: &str) -> Result<Option<Value>, ClarityEvalError> {
+pub fn execute(snippet: &str) -> Result<Option<Value>, ClarityError> {
     execute_versioned(snippet, DEFAULT_CLARITY_VERSION)
 }
 
@@ -89,7 +90,7 @@ pub fn execute(snippet: &str) -> Result<Option<Value>, ClarityEvalError> {
 pub fn execute_versioned(
     snippet: &str,
     version: ClarityVersion,
-) -> Result<Option<Value>, ClarityEvalError> {
+) -> Result<Option<Value>, ClarityError> {
     let sender_pk = StacksPrivateKey::random();
     let sender: StandardPrincipalData = (&sender_pk).into();
     let contract_id = QualifiedContractIdentifier::new(sender.clone(), "contract".into());
@@ -112,7 +113,7 @@ pub fn execute_and_check<F>(
     snippet: &str,
     sender: StandardPrincipalData,
     check: F,
-) -> Result<Option<Value>, ClarityEvalError>
+) -> Result<Option<Value>, ClarityError>
 where
     F: FnMut(&mut GlobalContext) -> Result<(), VmExecutionError>,
 {
@@ -127,7 +128,7 @@ pub fn execute_and_check_versioned<F>(
     version: ClarityVersion,
     sender: StandardPrincipalData,
     mut check: F,
-) -> Result<Option<Value>, ClarityEvalError>
+) -> Result<Option<Value>, ClarityError>
 where
     F: FnMut(&mut GlobalContext) -> Result<(), VmExecutionError>,
 {

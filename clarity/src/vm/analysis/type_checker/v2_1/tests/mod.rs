@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use clarity_types::errors::ParseError;
 use clarity_types::token::Token;
 use clarity_types::types::SequenceSubtype;
 #[cfg(test)]
@@ -28,6 +29,8 @@ use crate::vm::analysis::type_checker::v2_1::{MAX_FUNCTION_PARAMETERS, MAX_TRAIT
 use crate::vm::analysis::types::ContractAnalysis;
 use crate::vm::ast::build_ast;
 use crate::vm::ast::errors::ParseErrorKind;
+use crate::vm::clarity::ClarityError;
+use crate::vm::errors::VmExecutionError;
 use crate::vm::tests::test_clarity_versions;
 use crate::vm::types::SequenceSubtype::*;
 use crate::vm::types::StringSubtype::*;
@@ -1745,6 +1748,11 @@ fn test_slice_buff() {
     for (bad_test, expected) in bad.iter().zip(bad_expected.iter()) {
         assert_eq!(*expected, *type_check_helper(bad_test).unwrap_err().err);
     }
+    println!("ClarityError: {}", size_of::<ClarityError>());
+    println!("StaticCheckError: {}", size_of::<StaticCheckError>());
+    println!("ParseError: {}", size_of::<ParseError>());
+    println!("VmExecutionError: {}", size_of::<VmExecutionError>());
+    panic!("HERE");
 }
 
 #[test]

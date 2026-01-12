@@ -19,6 +19,7 @@ use proptest::prelude::*;
 use stacks_common::types::StacksEpochId;
 
 pub use crate::vm::analysis::errors::CheckErrorKind;
+use crate::vm::clarity::ClarityError;
 use crate::vm::tests::proptest_utils::{
     contract_name_strategy, execute_versioned, standard_principal_strategy,
     to_ascii_buffer_snippet_strategy, utf8_string_ascii_only_snippet_strategy,
@@ -54,39 +55,43 @@ fn test_simple_buff_to_int_le() {
         "(buff-to-int-le \"not-needed\" 0xfffffffffffffffffffffffffffffffe)";
     assert_eq!(
         execute_v2(bad_wrong_number_test).unwrap_err(),
-        CheckErrorKind::IncorrectArgumentCount(1, 2).into()
+        ClarityError::Interpreter(CheckErrorKind::IncorrectArgumentCount(1, 2).into())
     );
 
     // Right number of arguments, but wrong type.
     let bad_wrong_type_test = "(buff-to-int-le \"wrong-type\")";
     assert_eq!(
         execute_v2(bad_wrong_type_test).unwrap_err(),
-        CheckErrorKind::TypeValueError(
-            Box::new(SequenceType(BufferType(
-                BufferLength::try_from(16_u32).unwrap()
-            ))),
-            Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
-                ASCIIData {
-                    data: "wrong-type".as_bytes().to_vec()
-                }
-            ))))
+        ClarityError::Interpreter(
+            CheckErrorKind::TypeValueError(
+                Box::new(SequenceType(BufferType(
+                    BufferLength::try_from(16_u32).unwrap()
+                ))),
+                Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
+                    ASCIIData {
+                        data: "wrong-type".as_bytes().to_vec()
+                    }
+                ))))
+            )
+            .into()
         )
-        .into()
     );
 
     // Right number of arguments but buffer is too large.
     let bad_too_large_test = "(buff-to-int-le 0x000102030405060708090a0b0c0d0e0f00)";
     assert_eq!(
         execute_v2(bad_too_large_test).unwrap_err(),
-        CheckErrorKind::TypeValueError(
-            Box::new(SequenceType(BufferType(
-                BufferLength::try_from(16_u32).unwrap()
-            ))),
-            Box::new(Value::Sequence(SequenceData::Buffer(BuffData {
-                data: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]
-            })))
+        ClarityError::Interpreter(
+            CheckErrorKind::TypeValueError(
+                Box::new(SequenceType(BufferType(
+                    BufferLength::try_from(16_u32).unwrap()
+                ))),
+                Box::new(Value::Sequence(SequenceData::Buffer(BuffData {
+                    data: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]
+                })))
+            )
+            .into()
         )
-        .into()
     );
 }
 
@@ -112,39 +117,43 @@ fn test_simple_buff_to_uint_le() {
         "(buff-to-uint-le \"not-needed\" 0xfffffffffffffffffffffffffffffffe)";
     assert_eq!(
         execute_v2(bad_wrong_number_test).unwrap_err(),
-        CheckErrorKind::IncorrectArgumentCount(1, 2).into()
+        ClarityError::Interpreter(CheckErrorKind::IncorrectArgumentCount(1, 2).into())
     );
 
     // Right number of arguments, but wrong type.
     let bad_wrong_type_test = "(buff-to-uint-le \"wrong-type\")";
     assert_eq!(
         execute_v2(bad_wrong_type_test).unwrap_err(),
-        CheckErrorKind::TypeValueError(
-            Box::new(SequenceType(BufferType(
-                BufferLength::try_from(16_u32).unwrap()
-            ))),
-            Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
-                ASCIIData {
-                    data: "wrong-type".as_bytes().to_vec()
-                }
-            ))))
+        ClarityError::Interpreter(
+            CheckErrorKind::TypeValueError(
+                Box::new(SequenceType(BufferType(
+                    BufferLength::try_from(16_u32).unwrap()
+                ))),
+                Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
+                    ASCIIData {
+                        data: "wrong-type".as_bytes().to_vec()
+                    }
+                ))))
+            )
+            .into()
         )
-        .into()
     );
 
     // Right number of arguments but buffer is too large.
     let bad_too_large_test = "(buff-to-uint-le 0x000102030405060708090a0b0c0d0e0f00)";
     assert_eq!(
         execute_v2(bad_too_large_test).unwrap_err(),
-        CheckErrorKind::TypeValueError(
-            Box::new(SequenceType(BufferType(
-                BufferLength::try_from(16_u32).unwrap()
-            ))),
-            Box::new(Value::Sequence(SequenceData::Buffer(BuffData {
-                data: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]
-            })))
+        ClarityError::Interpreter(
+            CheckErrorKind::TypeValueError(
+                Box::new(SequenceType(BufferType(
+                    BufferLength::try_from(16_u32).unwrap()
+                ))),
+                Box::new(Value::Sequence(SequenceData::Buffer(BuffData {
+                    data: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]
+                })))
+            )
+            .into()
         )
-        .into()
     );
 }
 
@@ -170,39 +179,43 @@ fn test_simple_buff_to_int_be() {
         "(buff-to-int-be \"not-needed\" 0xfffffffffffffffffffffffffffffffe)";
     assert_eq!(
         execute_v2(bad_wrong_number_test).unwrap_err(),
-        CheckErrorKind::IncorrectArgumentCount(1, 2).into()
+        ClarityError::Interpreter(CheckErrorKind::IncorrectArgumentCount(1, 2).into())
     );
 
     // Right number of arguments, but wrong type.
     let bad_wrong_type_test = "(buff-to-int-be \"wrong-type\")";
     assert_eq!(
         execute_v2(bad_wrong_type_test).unwrap_err(),
-        CheckErrorKind::TypeValueError(
-            Box::new(SequenceType(BufferType(
-                BufferLength::try_from(16_u32).unwrap()
-            ))),
-            Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
-                ASCIIData {
-                    data: "wrong-type".as_bytes().to_vec()
-                }
-            ))))
+        ClarityError::Interpreter(
+            CheckErrorKind::TypeValueError(
+                Box::new(SequenceType(BufferType(
+                    BufferLength::try_from(16_u32).unwrap()
+                ))),
+                Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
+                    ASCIIData {
+                        data: "wrong-type".as_bytes().to_vec()
+                    }
+                ))))
+            )
+            .into()
         )
-        .into()
     );
 
     // Right number of arguments but buffer is too large.
     let bad_too_large_test = "(buff-to-int-be 0x000102030405060708090a0b0c0d0e0f00)";
     assert_eq!(
         execute_v2(bad_too_large_test).unwrap_err(),
-        CheckErrorKind::TypeValueError(
-            Box::new(SequenceType(BufferType(
-                BufferLength::try_from(16_u32).unwrap()
-            ))),
-            Box::new(Value::Sequence(SequenceData::Buffer(BuffData {
-                data: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]
-            })))
+        ClarityError::Interpreter(
+            CheckErrorKind::TypeValueError(
+                Box::new(SequenceType(BufferType(
+                    BufferLength::try_from(16_u32).unwrap()
+                ))),
+                Box::new(Value::Sequence(SequenceData::Buffer(BuffData {
+                    data: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]
+                })))
+            )
+            .into()
         )
-        .into()
     );
 }
 
@@ -228,39 +241,43 @@ fn test_simple_buff_to_uint_be() {
         "(buff-to-uint-be \"not-needed\" 0xfffffffffffffffffffffffffffffffe)";
     assert_eq!(
         execute_v2(bad_wrong_number_test).unwrap_err(),
-        CheckErrorKind::IncorrectArgumentCount(1, 2).into()
+        ClarityError::Interpreter(CheckErrorKind::IncorrectArgumentCount(1, 2).into())
     );
 
     // Right number of arguments, but wrong type.
     let bad_wrong_type_test = "(buff-to-uint-be \"wrong-type\")";
     assert_eq!(
         execute_v2(bad_wrong_type_test).unwrap_err(),
-        CheckErrorKind::TypeValueError(
-            Box::new(SequenceType(BufferType(
-                BufferLength::try_from(16_u32).unwrap()
-            ))),
-            Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
-                ASCIIData {
-                    data: "wrong-type".as_bytes().to_vec()
-                }
-            ))))
+        ClarityError::Interpreter(
+            CheckErrorKind::TypeValueError(
+                Box::new(SequenceType(BufferType(
+                    BufferLength::try_from(16_u32).unwrap()
+                ))),
+                Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
+                    ASCIIData {
+                        data: "wrong-type".as_bytes().to_vec()
+                    }
+                ))))
+            )
+            .into()
         )
-        .into()
     );
 
     // Right number of arguments but buffer is too large.
     let bad_too_large_test = "(buff-to-uint-be 0x000102030405060708090a0b0c0d0e0f00)";
     assert_eq!(
         execute_v2(bad_too_large_test).unwrap_err(),
-        CheckErrorKind::TypeValueError(
-            Box::new(SequenceType(BufferType(
-                BufferLength::try_from(16_u32).unwrap()
-            ))),
-            Box::new(Value::Sequence(SequenceData::Buffer(BuffData {
-                data: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]
-            })))
+        ClarityError::Interpreter(
+            CheckErrorKind::TypeValueError(
+                Box::new(SequenceType(BufferType(
+                    BufferLength::try_from(16_u32).unwrap()
+                ))),
+                Box::new(Value::Sequence(SequenceData::Buffer(BuffData {
+                    data: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]
+                })))
+            )
+            .into()
         )
-        .into()
     );
 }
 
@@ -312,20 +329,22 @@ fn test_simple_string_to_int() {
     let no_args_test = r#"(string-to-int?)"#;
     assert_eq!(
         execute_v2(no_args_test).unwrap_err(),
-        CheckErrorKind::IncorrectArgumentCount(1, 0).into()
+        ClarityError::Interpreter(CheckErrorKind::IncorrectArgumentCount(1, 0).into())
     );
 
     let wrong_type_error_test = r#"(string-to-int? 1)"#;
     assert_eq!(
         execute_v2(wrong_type_error_test).unwrap_err(),
-        CheckErrorKind::UnionTypeValueError(
-            vec![
-                TypeSignature::STRING_ASCII_MAX,
-                TypeSignature::STRING_UTF8_MAX,
-            ],
-            Box::new(Value::Int(1))
+        ClarityError::Interpreter(
+            CheckErrorKind::UnionTypeValueError(
+                vec![
+                    TypeSignature::STRING_ASCII_MAX,
+                    TypeSignature::STRING_UTF8_MAX,
+                ],
+                Box::new(Value::Int(1))
+            )
+            .into()
         )
-        .into()
     );
 }
 
@@ -377,20 +396,22 @@ fn test_simple_string_to_uint() {
     let no_args_test = r#"(string-to-uint?)"#;
     assert_eq!(
         execute_v2(no_args_test).unwrap_err(),
-        CheckErrorKind::IncorrectArgumentCount(1, 0).into()
+        ClarityError::Interpreter(CheckErrorKind::IncorrectArgumentCount(1, 0).into())
     );
 
     let wrong_type_error_test = r#"(string-to-uint? 1)"#;
     assert_eq!(
         execute_v2(wrong_type_error_test).unwrap_err(),
-        CheckErrorKind::UnionTypeValueError(
-            vec![
-                TypeSignature::STRING_ASCII_MAX,
-                TypeSignature::STRING_UTF8_MAX,
-            ],
-            Box::new(Value::Int(1))
+        ClarityError::Interpreter(
+            CheckErrorKind::UnionTypeValueError(
+                vec![
+                    TypeSignature::STRING_ASCII_MAX,
+                    TypeSignature::STRING_UTF8_MAX,
+                ],
+                Box::new(Value::Int(1))
+            )
+            .into()
         )
-        .into()
     );
 }
 
@@ -411,21 +432,23 @@ fn test_simple_int_to_ascii() {
     let no_args_test = r#"(int-to-ascii)"#;
     assert_eq!(
         execute_v2(no_args_test).unwrap_err(),
-        CheckErrorKind::IncorrectArgumentCount(1, 0).into()
+        ClarityError::Interpreter(CheckErrorKind::IncorrectArgumentCount(1, 0).into())
     );
 
     let wrong_type_error_test = r#"(int-to-ascii "1")"#;
     assert_eq!(
         execute_v2(wrong_type_error_test).unwrap_err(),
-        CheckErrorKind::UnionTypeValueError(
-            vec![TypeSignature::IntType, TypeSignature::UIntType],
-            Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
-                ASCIIData {
-                    data: "1".as_bytes().to_vec()
-                }
-            ))))
+        ClarityError::Interpreter(
+            CheckErrorKind::UnionTypeValueError(
+                vec![TypeSignature::IntType, TypeSignature::UIntType],
+                Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
+                    ASCIIData {
+                        data: "1".as_bytes().to_vec()
+                    }
+                ))))
+            )
+            .into()
         )
-        .into()
     );
 }
 
@@ -446,21 +469,23 @@ fn test_simple_int_to_utf8() {
     let no_args_test = r#"(int-to-utf8)"#;
     assert_eq!(
         execute_v2(no_args_test).unwrap_err(),
-        CheckErrorKind::IncorrectArgumentCount(1, 0).into()
+        ClarityError::Interpreter(CheckErrorKind::IncorrectArgumentCount(1, 0).into())
     );
 
     let wrong_type_error_test = r#"(int-to-utf8 "1")"#;
     assert_eq!(
         execute_v2(wrong_type_error_test).unwrap_err(),
-        CheckErrorKind::UnionTypeValueError(
-            vec![TypeSignature::IntType, TypeSignature::UIntType],
-            Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
-                ASCIIData {
-                    data: "1".as_bytes().to_vec()
-                }
-            ))))
+        ClarityError::Interpreter(
+            CheckErrorKind::UnionTypeValueError(
+                vec![TypeSignature::IntType, TypeSignature::UIntType],
+                Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
+                    ASCIIData {
+                        data: "1".as_bytes().to_vec()
+                    }
+                ))))
+            )
+            .into()
         )
-        .into()
     );
 }
 

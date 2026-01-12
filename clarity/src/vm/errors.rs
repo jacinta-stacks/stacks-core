@@ -16,8 +16,8 @@
 use std::{error, fmt};
 
 use clarity_types::Value;
+use clarity_types::errors::CostErrors;
 pub use clarity_types::errors::{ClarityTypeError, IncomparableError};
-use clarity_types::errors::{CostErrors, ParseError};
 use clarity_types::representations::SymbolicExpression;
 use clarity_types::types::FunctionIdentifier;
 #[cfg(feature = "rusqlite")]
@@ -302,46 +302,6 @@ impl From<EarlyReturnError> for Value {
         match val {
             EarlyReturnError::UnwrapFailed(v) => *v,
             EarlyReturnError::AssertionFailed(v) => *v,
-        }
-    }
-}
-
-/// Helper error for testing both clarity parse and vm execution errors.
-#[derive(Debug, PartialEq)]
-pub enum ClarityEvalError {
-    Vm(VmExecutionError),
-    Parse(ParseError),
-}
-
-impl From<VmExecutionError> for ClarityEvalError {
-    fn from(err: VmExecutionError) -> Self {
-        Self::Vm(err)
-    }
-}
-
-impl From<ParseError> for ClarityEvalError {
-    fn from(err: ParseError) -> Self {
-        Self::Parse(err)
-    }
-}
-
-impl From<CheckErrorKind> for ClarityEvalError {
-    fn from(err: CheckErrorKind) -> Self {
-        Self::Vm(err.into())
-    }
-}
-
-impl From<RuntimeError> for ClarityEvalError {
-    fn from(err: RuntimeError) -> Self {
-        Self::Vm(err.into())
-    }
-}
-
-impl fmt::Display for ClarityEvalError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ClarityEvalError::Vm(err) => write!(f, "VM Execution Error: {err}"),
-            ClarityEvalError::Parse(err) => write!(f, "Parse Error: {err}"),
         }
     }
 }

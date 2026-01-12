@@ -28,12 +28,11 @@ use stacks_common::util::hash::{hex_bytes, to_hex};
 
 use crate::vm::ast::parse;
 use crate::vm::callables::DefinedFunction;
+use crate::vm::clarity::ClarityError;
 use crate::vm::contexts::OwnedEnvironment;
 use crate::vm::costs::LimitedCostTracker;
 use crate::vm::database::MemoryBackingStore;
-use crate::vm::errors::{
-    CheckErrorKind, ClarityEvalError, EarlyReturnError, RuntimeError, VmExecutionError,
-};
+use crate::vm::errors::{CheckErrorKind, EarlyReturnError, RuntimeError, VmExecutionError};
 use crate::vm::tests::{execute, test_clarity_versions};
 use crate::vm::types::signatures::*;
 use crate::vm::types::{
@@ -620,7 +619,7 @@ fn test_secp256k1_errors() {
         "(principal-of?)",
     ];
 
-    let expectations: &[ClarityEvalError] = &[
+    let expectations: &[ClarityError] = &[
         CheckErrorKind::TypeValueError(Box::new(TypeSignature::BUFFER_32), Box::new(Value::Sequence(SequenceData::Buffer(BuffData { data: hex_bytes("de5b9eb9e7c5592930eb2e30a01369c36586d872082ed8181ee83d2a0ec20f").unwrap() })))).into(),
         CheckErrorKind::TypeValueError(Box::new(TypeSignature::BUFFER_65), Box::new(Value::Sequence(SequenceData::Buffer(BuffData { data: hex_bytes("8738487ebe69b93d8e51583be8eee50bb4213fc49c767d329632730cc193b873554428fc936ca3569afc15f1c9365f6591d6251a89fee9c9ac661116824d3a130100").unwrap() })))).into(),
         CheckErrorKind::IncorrectArgumentCount(2, 1).into(),
@@ -918,7 +917,7 @@ fn test_sequence_comparisons_clarity1() {
         "(>= \"baa\" \"aaa\")",
         "(<= \"baa\" \"aaa\")",
     ];
-    let error_expectations: &[ClarityEvalError] = &[
+    let error_expectations: &[ClarityError] = &[
         CheckErrorKind::UnionTypeValueError(
             vec![TypeSignature::IntType, TypeSignature::UIntType],
             Box::new(Value::Sequence(SequenceData::String(CharType::ASCII(
@@ -1029,7 +1028,7 @@ fn test_sequence_comparisons_clarity2() {
 fn test_sequence_comparisons_mismatched_types() {
     // Tests that comparing objects of different types results in an error in Clarity1.
     let error_tests = ["(> 0 u1)", "(< 0 u1)"];
-    let v1_error_expectations: &[ClarityEvalError] = &[
+    let v1_error_expectations: &[ClarityError] = &[
         CheckErrorKind::UnionTypeValueError(
             vec![TypeSignature::IntType, TypeSignature::UIntType],
             Box::new(Value::Int(0)),
@@ -1050,7 +1049,7 @@ fn test_sequence_comparisons_mismatched_types() {
             assert_eq!(*expectation, vm_execute(program).unwrap_err())
         });
 
-    let v2_error_expectations: &[ClarityEvalError] = &[
+    let v2_error_expectations: &[ClarityError] = &[
         CheckErrorKind::UnionTypeValueError(
             vec![
                 TypeSignature::IntType,
@@ -1084,7 +1083,7 @@ fn test_sequence_comparisons_mismatched_types() {
 
     // Tests that comparing objects of different types results in an error in Clarity2.
     let error_tests = ["(> \"baa\" u\"aaa\")", "(> \"baa\" 0x0001)"];
-    let error_expectations: &[ClarityEvalError] = &[
+    let error_expectations: &[ClarityError] = &[
         CheckErrorKind::UnionTypeValueError(
             vec![
                 TypeSignature::IntType,
@@ -1153,7 +1152,7 @@ fn test_simple_arithmetic_errors(#[case] version: ClarityVersion, #[case] epoch:
         "(is-eq (some 1) (some true))",
     ];
 
-    let expectations: &[ClarityEvalError] = &[
+    let expectations: &[ClarityError] = &[
         CheckErrorKind::IncorrectArgumentCount(2, 1).into(),
         CheckErrorKind::TypeValueError(
             Box::new(TypeSignature::IntType),
@@ -1204,7 +1203,7 @@ fn test_unsigned_arithmetic() {
         "(to-int (pow u2 u127))",
     ];
 
-    let expectations: &[ClarityEvalError] = &[
+    let expectations: &[ClarityError] = &[
         RuntimeError::ArithmeticUnderflow.into(),
         RuntimeError::ArithmeticUnderflow.into(),
         CheckErrorKind::UnionTypeValueError(
@@ -1243,7 +1242,7 @@ fn test_options_errors() {
         "(get field-0 1)",
     ];
 
-    let expectations: &[ClarityEvalError] = &[
+    let expectations: &[ClarityError] = &[
         CheckErrorKind::IncorrectArgumentCount(1, 2).into(),
         CheckErrorKind::ExpectedOptionalValue(Box::new(Value::Bool(true))).into(),
         CheckErrorKind::IncorrectArgumentCount(1, 2).into(),
@@ -1281,7 +1280,7 @@ fn test_stx_ops_errors() {
         "(stx-burn? 4 'SZ2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKQ9H6DPR)",
     ];
 
-    let expectations: &[ClarityEvalError] = &[
+    let expectations: &[ClarityError] = &[
         CheckErrorKind::IncorrectArgumentCount(3, 2).into(),
         CheckErrorKind::BadTransferSTXArguments.into(),
         CheckErrorKind::BadTransferSTXArguments.into(),
@@ -1354,7 +1353,7 @@ fn test_bitwise() {
         "(bit-shift-left -64 u121)",        // -170141183460469231731687303715884105728
     ];
 
-    let expectations: &[Result<Value, ClarityEvalError>] = &[
+    let expectations: &[Result<Value, ClarityError>] = &[
         Ok(Value::Int(16)),                                       // (bit-and 24 16)
         Ok(Value::UInt(16)),                                      // (bit-and u24 u16)
         Ok(Value::Int(28)),                                       // (bit-xor 24 4)y
@@ -1459,7 +1458,7 @@ fn test_option_destructs() {
         "(try! 1)",
     ];
 
-    let expectations: &[Result<Value, ClarityEvalError>] = &[
+    let expectations: &[Result<Value, ClarityError>] = &[
         Ok(Value::Int(1)),
         Ok(Value::Int(1)),
         Err(
@@ -1519,7 +1518,7 @@ fn test_hash_errors() {
         "(sha512/256 1 2)",
     ];
 
-    let expectations: &[ClarityEvalError] = &[
+    let expectations: &[ClarityError] = &[
         CheckErrorKind::IncorrectArgumentCount(1, 2).into(),
         CheckErrorKind::IncorrectArgumentCount(1, 2).into(),
         CheckErrorKind::IncorrectArgumentCount(1, 2).into(),
@@ -1620,7 +1619,7 @@ fn test_bad_lets() {
         "(let ((false 1)) false)",
     ];
 
-    let expectations: &[ClarityEvalError] = &[
+    let expectations: &[ClarityError] = &[
         CheckErrorKind::NameAlreadyUsed("tx-sender".to_string()).into(),
         CheckErrorKind::NameAlreadyUsed("*".to_string()).into(),
         CheckErrorKind::NameAlreadyUsed("a".to_string()).into(),
@@ -1722,11 +1721,11 @@ fn test_asserts_short_circuit() {
         "(begin (asserts! (is-eq 1 1) (err 0)) (asserts! (is-eq 2 1) (err 1)) (ok 2))",
     ];
 
-    let expectations: &[ClarityEvalError] = &[
-        ClarityEvalError::Vm(VmExecutionError::EarlyReturn(
+    let expectations: &[ClarityError] = &[
+        ClarityError::Interpreter(VmExecutionError::EarlyReturn(
             EarlyReturnError::AssertionFailed(Box::new(Value::error(Value::Int(0)).unwrap())),
         )),
-        ClarityEvalError::Vm(VmExecutionError::EarlyReturn(
+        ClarityError::Interpreter(VmExecutionError::EarlyReturn(
             EarlyReturnError::AssertionFailed(Box::new(Value::error(Value::Int(1)).unwrap())),
         )),
     ];
@@ -1834,6 +1833,6 @@ fn test_execution_time_expiration() {
         vm_execute_with_limited_execution_time("(+ 1 1)", Duration::from_secs(0))
             .err()
             .unwrap(),
-        ClarityEvalError::Vm(CostErrors::ExecutionTimeExpired.into())
+        ClarityError::Interpreter(CostErrors::ExecutionTimeExpired.into())
     );
 }

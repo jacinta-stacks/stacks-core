@@ -14,9 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use clarity::vm::clarity::ClarityConnection;
+use clarity::vm::clarity::{ClarityConnection, ClarityError};
 use clarity::vm::costs::{ExecutionCost, LimitedCostTracker};
-use clarity::vm::errors::ClarityEvalError;
 use clarity::vm::types::{PrincipalData, StandardPrincipalData};
 use regex::{Captures, Regex};
 use stacks_common::types::chainstate::StacksBlockId;
@@ -197,7 +196,7 @@ impl RPCPoxInfoData {
                         cost_track,
                         |env| {
                             env.execute_contract(&contract_identifier, function, &[], true)
-                                .map_err(ClarityEvalError::from)
+                                .map_err(ClarityError::from)
                         },
                     )
                 },

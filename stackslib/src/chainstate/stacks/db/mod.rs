@@ -22,12 +22,11 @@ use std::path::PathBuf;
 use std::{fs, io};
 
 use clarity::vm::analysis::analysis_db::AnalysisDatabase;
-use clarity::vm::clarity::TransactionConnection;
+use clarity::vm::clarity::{ClarityError, TransactionConnection};
 use clarity::vm::costs::{ExecutionCost, LimitedCostTracker};
 use clarity::vm::database::{
     BurnStateDB, ClarityDatabase, HeadersDB, STXBalance, NULL_BURN_STATE_DB,
 };
-use clarity::vm::errors::ClarityEvalError;
 use clarity::vm::events::*;
 use clarity::vm::representations::ContractName;
 use clarity::vm::types::TupleData;
@@ -67,8 +66,8 @@ use crate::chainstate::stacks::{
     C32_ADDRESS_VERSION_TESTNET_SINGLESIG, *,
 };
 use crate::clarity_vm::clarity::{
-    ClarityBlockConnection, ClarityConnection, ClarityError, ClarityInstance,
-    ClarityReadOnlyConnection, PreCommitClarityBlock,
+    ClarityBlockConnection, ClarityConnection, ClarityInstance, ClarityReadOnlyConnection,
+    PreCommitClarityBlock,
 };
 use crate::clarity_vm::database::marf::MarfedKV;
 use crate::clarity_vm::database::HeadersDBConn;
@@ -2052,7 +2051,7 @@ impl StacksChainState {
                     //  can be executed. any transformation is rolled back.
                     false,
                 )
-                .map_err(ClarityEvalError::from)
+                .map_err(ClarityError::from)
             },
         )?;
 

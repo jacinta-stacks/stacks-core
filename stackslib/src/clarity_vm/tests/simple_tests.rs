@@ -13,8 +13,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+use clarity::vm::clarity::ClarityError;
 use clarity::vm::contexts::OwnedEnvironment;
-use clarity::vm::errors::{ClarityEvalError, RuntimeError, VmExecutionError};
+use clarity::vm::errors::{RuntimeError, VmExecutionError};
 use clarity::vm::test_util::{TEST_BURN_STATE_DB, TEST_HEADER_DB};
 use clarity::vm::types::QualifiedContractIdentifier;
 use stacks_common::consts::{FIRST_BURNCHAIN_CONSENSUS_HASH, FIRST_STACKS_BLOCK_HASH};
@@ -77,7 +78,7 @@ fn test_at_unknown_block() {
             .unwrap_err();
         eprintln!("{err}");
         match err {
-            ClarityEvalError::Vm(VmExecutionError::Runtime(x, _)) => assert_eq!(
+            ClarityError::Interpreter(VmExecutionError::Runtime(x, _)) => assert_eq!(
                 x,
                 RuntimeError::UnknownBlockHeaderHash(BlockHeaderHash::from(vec![2; 32].as_slice()))
             ),

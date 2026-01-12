@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use clarity::vm::clarity::ClarityError;
 use clarity::vm::contexts::GlobalContext;
-use clarity::vm::errors::ClarityEvalError;
 use clarity::vm::types::{PrincipalData, QualifiedContractIdentifier, TupleData};
 use clarity::vm::Value;
 #[cfg(any(test, feature = "testing"))]
@@ -343,7 +343,7 @@ pub fn synthesize_pox_2_or_3_event_info(
     sender_opt: Option<&PrincipalData>,
     function_name: &str,
     args: &[Value],
-) -> Result<Option<Value>, ClarityEvalError> {
+) -> Result<Option<Value>, ClarityError> {
     let sender = match sender_opt {
         Some(sender) => sender,
         None => {
@@ -415,7 +415,7 @@ pub fn synthesize_pox_2_or_3_event_info(
                 Ok(Value::Tuple(event_tuple))
             },
         )
-        .map_err(|e: ClarityEvalError| {
+        .map_err(|e: ClarityError| {
             error!("Failed to synthesize PoX event: {e:?}");
             e
         })?;

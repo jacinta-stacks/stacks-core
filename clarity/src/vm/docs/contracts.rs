@@ -19,11 +19,11 @@ use stacks_common::types::StacksEpochId;
 
 use crate::vm::analysis::{ContractAnalysis, mem_type_check};
 use crate::vm::ast::build_ast;
+use crate::vm::clarity::ClarityError;
 use crate::vm::contexts::GlobalContext;
 use crate::vm::costs::LimitedCostTracker;
 use crate::vm::database::MemoryBackingStore;
 use crate::vm::docs::{get_input_type_string, get_output_type_string, get_signature};
-use crate::vm::errors::ClarityEvalError;
 use crate::vm::types::{FunctionType, QualifiedContractIdentifier, Value};
 use crate::vm::version::ClarityVersion;
 use crate::vm::{self, ContractContext};
@@ -82,7 +82,7 @@ fn get_constant_value(var_name: &str, contract_content: &str) -> Value {
         .expect("BUG: failed to return constant value")
 }
 
-fn doc_execute(program: &str) -> Result<Option<Value>, ClarityEvalError> {
+fn doc_execute(program: &str) -> Result<Option<Value>, ClarityError> {
     let contract_id = QualifiedContractIdentifier::transient();
     let mut contract_context = ContractContext::new(contract_id.clone(), ClarityVersion::Clarity2);
     let mut marf = MemoryBackingStore::new();
@@ -104,7 +104,7 @@ fn doc_execute(program: &str) -> Result<Option<Value>, ClarityEvalError> {
     .expressions;
     global_context
         .execute(|g| vm::eval_all(&parsed, &mut contract_context, g, None))
-        .map_err(ClarityEvalError::from)
+        .map_err(ClarityError::from)
 }
 
 #[allow(clippy::expect_used)]

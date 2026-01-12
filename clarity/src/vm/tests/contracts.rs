@@ -26,7 +26,8 @@ use crate::vm::types::{PrincipalData, QualifiedContractIdentifier, StandardPrinc
 #[cfg(test)]
 use crate::vm::{
     ast::errors::ParseErrorKind,
-    errors::{CheckErrorKind, ClarityEvalError, RuntimeError, VmExecutionError},
+    clarity::ClarityError,
+    errors::{CheckErrorKind, RuntimeError, VmExecutionError},
     tests::{
         MemoryEnvironmentGenerator, TopLevelMemoryEnvironmentGenerator, env_factory, execute,
         is_committed, is_err_code_i128 as is_err_code, symbols_from_values, tl_env_factory,
@@ -109,7 +110,7 @@ fn test_get_block_info_eval(
         "(define-private (test-func) (get-block-info? vrf-seed u1))",
     ];
 
-    let expected = [
+    let expected: [Result<Value, ClarityError>; 8] = [
         Ok(Value::none()),
         Ok(Value::none()),
         Ok(Value::none()),
@@ -995,7 +996,7 @@ fn test_at_unknown_block(
         .unwrap_err();
     eprintln!("{err}");
     match err {
-        ClarityEvalError::Vm(VmExecutionError::Runtime(x, _)) => assert_eq!(
+        ClarityError::Interpreter(VmExecutionError::Runtime(x, _)) => assert_eq!(
             x,
             RuntimeError::UnknownBlockHeaderHash(BlockHeaderHash::from(vec![2_u8; 32].as_slice()))
         ),
@@ -1035,7 +1036,7 @@ fn test_ast_stack_depth() {
                       ";
     assert_eq!(
         vm_execute(program).unwrap_err(),
-        ClarityEvalError::Parse(ParseErrorKind::VaryExpressionStackDepthTooDeep.into())
+        ParseErrorKind::VaryExpressionStackDepthTooDeep.into()
     );
 }
 
@@ -1055,7 +1056,7 @@ fn test_arg_stack_depth() {
                       ";
     assert_eq!(
         vm_execute(program).unwrap_err(),
-        RuntimeError::MaxStackDepthReached.into()
+        ClarityError::Interpreter(RuntimeError::MaxStackDepthReached.into())
     );
 }
 
@@ -1092,7 +1093,7 @@ fn test_cc_stack_depth(
     assert_eq!(
         env.initialize_contract(contract_identifier, contract_two)
             .unwrap_err(),
-        RuntimeError::MaxStackDepthReached.into()
+        ClarityError::Interpreter(RuntimeError::MaxStackDepthReached.into())
     );
 }
 
@@ -1133,7 +1134,7 @@ fn test_cc_trait_stack_depth(
     assert_eq!(
         env.initialize_contract(contract_identifier, contract_two)
             .unwrap_err(),
-        RuntimeError::MaxStackDepthReached.into()
+        ClarityError::Interpreter(RuntimeError::MaxStackDepthReached.into())
     );
 }
 

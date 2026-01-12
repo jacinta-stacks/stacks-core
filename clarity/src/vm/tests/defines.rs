@@ -21,7 +21,8 @@ use rstest_reuse::{self, *};
 #[cfg(test)]
 use stacks_common::types::StacksEpochId;
 
-use crate::vm::errors::{CheckErrorKind, ClarityEvalError};
+use crate::vm::clarity::ClarityError;
+use crate::vm::errors::CheckErrorKind;
 use crate::vm::tests::test_clarity_versions;
 #[cfg(test)]
 use crate::vm::{
@@ -32,8 +33,8 @@ use crate::vm::{
     {ClarityVersion, execute},
 };
 
-fn assert_eq_err(e1: CheckErrorKind, e2: ClarityEvalError) {
-    let e1: ClarityEvalError = e1.into();
+fn assert_eq_err(e1: CheckErrorKind, e2: ClarityError) {
+    let e1: ClarityError = ClarityError::Interpreter(e1.into());
     assert_eq!(e1, e2)
 }
 
@@ -67,14 +68,16 @@ fn test_accept_options(#[case] version: ClarityVersion, #[case] epoch: StacksEpo
         format!("{defun} (f (some 1))"),
         format!("{defun} (f (some true))"),
     ];
-    let expectations: &[Result<_, ClarityEvalError>] = &[
+    let expectations: &[Result<_, ClarityError>] = &[
         Ok(Some(Value::Int(0))),
         Ok(Some(Value::Int(10))),
-        Err(CheckErrorKind::TypeValueError(
-            Box::new(TypeSignature::from_string("(optional int)", version, epoch)),
-            Box::new(Value::some(Value::Bool(true)).unwrap()),
-        )
-        .into()),
+        Err(ClarityError::Interpreter(
+            CheckErrorKind::TypeValueError(
+                Box::new(TypeSignature::from_string("(optional int)", version, epoch)),
+                Box::new(Value::some(Value::Bool(true)).unwrap()),
+            )
+            .into(),
+        )),
     ];
 
     for (test, expect) in tests.iter().zip(expectations.iter()) {
@@ -84,7 +87,7 @@ fn test_accept_options(#[case] version: ClarityVersion, #[case] epoch: StacksEpo
     let bad_defun = "(define-private (f (b (optional int int))) (* 10 (default-to 0 b)))";
     assert_eq!(
         execute(bad_defun).unwrap_err(),
-        CheckErrorKind::InvalidTypeDescription.into()
+        ClarityError::Interpreter(CheckErrorKind::InvalidTypeDescription.into())
     );
 }
 
@@ -186,7 +189,7 @@ fn test_stack_depth() {
     assert_eq!(Ok(Some(Value::Int(64))), execute(&test0));
     assert!(matches!(
         execute(&test1),
-        Err(ClarityEvalError::Vm(VmExecutionError::Runtime(
+        Err(ClarityError::Interpreter(VmExecutionError::Runtime(
             RuntimeError::MaxStackDepthReached,
             _
         )))
@@ -476,18 +479,18 @@ fn test_define_trait_arg_count() {
 
     // These errors are hit in the trait resolver, before reaching the type-checker
     match execute(test0).unwrap_err() {
-        ClarityEvalError::Parse(parse_err)
+        ClarityError::Parse(parse_err)
             if *parse_err.err == ParseErrorKind::DefineTraitBadSignature => {}
         e => panic!("{e:?}"),
     };
     match execute(test1).unwrap_err() {
-        ClarityEvalError::Parse(parse_err)
+        ClarityError::Parse(parse_err)
             if *parse_err.err == ParseErrorKind::DefineTraitBadSignature => {}
         e => panic!("{e}"),
     };
     execute(test2).unwrap();
     match execute(test3).unwrap_err() {
-        ClarityEvalError::Parse(parse_err)
+        ClarityError::Parse(parse_err)
             if *parse_err.err == ParseErrorKind::DefineTraitBadSignature => {}
         e => panic!("{e}"),
     };
@@ -502,18 +505,18 @@ fn test_use_trait_arg_count() {
 
     // These errors are hit in the trait resolver, before reaching the type-checker
     match execute(test0).unwrap_err() {
-        ClarityEvalError::Parse(parse_err)
+        ClarityError::Parse(parse_err)
             if *parse_err.err == ParseErrorKind::ImportTraitBadSignature => {}
         e => panic!("{e:?}"),
     };
     match execute(test1).unwrap_err() {
-        ClarityEvalError::Parse(parse_err)
+        ClarityError::Parse(parse_err)
             if *parse_err.err == ParseErrorKind::ImportTraitBadSignature => {}
         e => panic!("{e}"),
     };
     execute(test2).unwrap();
     match execute(test3).unwrap_err() {
-        ClarityEvalError::Parse(parse_err)
+        ClarityError::Parse(parse_err)
             if *parse_err.err == ParseErrorKind::ImportTraitBadSignature => {}
         e => panic!("{e}"),
     };
@@ -527,13 +530,13 @@ fn test_impl_trait_arg_count() {
 
     // These errors are hit in the trait resolver, before reaching the type-checker
     match execute(test0).unwrap_err() {
-        ClarityEvalError::Parse(parse_err)
+        ClarityError::Parse(parse_err)
             if *parse_err.err == ParseErrorKind::ImplTraitBadSignature => {}
         e => panic!("{e:?}"),
     };
     execute(test1).unwrap();
     match execute(test2).unwrap_err() {
-        ClarityEvalError::Parse(parse_err)
+        ClarityError::Parse(parse_err)
             if *parse_err.err == ParseErrorKind::ImplTraitBadSignature => {}
         e => panic!("{e}"),
     };

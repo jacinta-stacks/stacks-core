@@ -18,14 +18,13 @@ use rstest::rstest;
 #[cfg(test)]
 use stacks_common::types::StacksEpochId;
 
-#[cfg(test)]
-use crate::vm::errors::ClarityEvalError;
 use crate::vm::tests::test_clarity_versions;
 #[cfg(test)]
 use crate::vm::{
     ClarityVersion, ContractContext,
     analysis::type_checker::v2_1::tests::contracts::type_check_version,
     ast::parse,
+    clarity::ClarityError,
     database::MemoryBackingStore,
     errors::{CheckErrorKind, StaticCheckErrorKind, VmExecutionError},
     tests::{TopLevelMemoryEnvironmentGenerator, tl_env_factory},
@@ -81,7 +80,7 @@ fn test_block_height(
     if version >= ClarityVersion::Clarity3 {
         let err = eval_result.unwrap_err();
         assert_eq!(
-            ClarityEvalError::Vm(VmExecutionError::Unchecked(
+            ClarityError::Interpreter(VmExecutionError::Unchecked(
                 CheckErrorKind::UndefinedVariable("block-height".to_string(),)
             )),
             err
@@ -140,7 +139,7 @@ fn test_stacks_block_height(
     if version < ClarityVersion::Clarity3 {
         let err = eval_result.unwrap_err();
         assert_eq!(
-            ClarityEvalError::Vm(VmExecutionError::Unchecked(
+            ClarityError::Interpreter(VmExecutionError::Unchecked(
                 CheckErrorKind::UndefinedVariable("stacks-block-height".to_string(),)
             )),
             err
@@ -199,7 +198,7 @@ fn test_tenure_height(
     if version < ClarityVersion::Clarity3 {
         let err = eval_result.unwrap_err();
         assert_eq!(
-            ClarityEvalError::Vm(VmExecutionError::Unchecked(
+            ClarityError::Interpreter(VmExecutionError::Unchecked(
                 CheckErrorKind::UndefinedVariable("tenure-height".to_string(),)
             )),
             err
@@ -277,7 +276,7 @@ fn expect_contract_error(
             && err_condition(version, epoch)
         {
             let err = init_result.unwrap_err();
-            if let ClarityEvalError::Vm(VmExecutionError::Unchecked(inner_err)) = &err {
+            if let ClarityError::Interpreter(VmExecutionError::Unchecked(inner_err)) = &err {
                 assert_eq!(expected_error, inner_err);
             } else {
                 panic!("Expected an Unchecked error, but got a different error");
@@ -297,7 +296,7 @@ fn expect_contract_error(
             && err_condition(version, epoch)
         {
             let err = eval_result.unwrap_err();
-            if let ClarityEvalError::Vm(VmExecutionError::Unchecked(inner_err)) = &err {
+            if let ClarityError::Interpreter(VmExecutionError::Unchecked(inner_err)) = &err {
                 assert_eq!(expected_error, inner_err);
             } else {
                 panic!("Expected an Unchecked error, but got a different error");
@@ -1205,7 +1204,7 @@ fn test_block_time(
     if version < ClarityVersion::Clarity4 {
         let err = eval_result.unwrap_err();
         assert_eq!(
-            ClarityEvalError::Vm(VmExecutionError::Unchecked(
+            ClarityError::Interpreter(VmExecutionError::Unchecked(
                 CheckErrorKind::UndefinedVariable("stacks-block-time".to_string(),)
             )),
             err
@@ -1331,7 +1330,7 @@ fn test_current_contract(
     if version < ClarityVersion::Clarity4 {
         let err = eval_result.unwrap_err();
         assert_eq!(
-            ClarityEvalError::Vm(VmExecutionError::Unchecked(
+            ClarityError::Interpreter(VmExecutionError::Unchecked(
                 CheckErrorKind::UndefinedVariable("current-contract".to_string(),)
             )),
             err

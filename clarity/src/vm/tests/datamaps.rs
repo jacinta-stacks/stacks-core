@@ -15,9 +15,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 use clarity_types::errors::ClarityTypeError;
 
-use crate::vm::errors::{
-    CheckErrorKind, ClarityEvalError, EarlyReturnError, SyntaxBindingError, VmExecutionError,
-};
+use crate::vm::clarity::ClarityError;
+use crate::vm::errors::{CheckErrorKind, EarlyReturnError, SyntaxBindingError, VmExecutionError};
 use crate::vm::types::{
     ListData, SequenceData, TupleData, TupleTypeSignature, TypeSignature, Value,
 };
@@ -298,7 +297,7 @@ fn test_set_response_variable() {
     "#;
     let contract_src = contract_src.to_string();
     assert_eq!(
-        Err(ClarityEvalError::Vm(
+        Err(ClarityError::Interpreter(
             EarlyReturnError::UnwrapFailed(Box::new(Value::Int(5))).into()
         )),
         execute(&contract_src)
@@ -478,7 +477,7 @@ fn datamap_errors() {
     for program in tests.iter() {
         assert_eq!(
             execute(program).unwrap_err(),
-            CheckErrorKind::NoSuchMap("non-existent".to_string()).into()
+            ClarityError::Interpreter(CheckErrorKind::NoSuchMap("non-existent".to_string()).into())
         );
     }
 }
@@ -499,7 +498,7 @@ fn lists_system_2() {
 
     matches!(
         execute(test),
-        Err(ClarityEvalError::Vm(VmExecutionError::Unchecked(
+        Err(ClarityError::Interpreter(VmExecutionError::Unchecked(
             CheckErrorKind::TypeError(_, _)
         )))
     );
@@ -566,7 +565,7 @@ fn lists_system() {
         println!("{test:#?}");
         assert!(matches!(
             test,
-            Err(ClarityEvalError::Vm(VmExecutionError::Unchecked(
+            Err(ClarityError::Interpreter(VmExecutionError::Unchecked(
                 CheckErrorKind::TypeValueError(_, _)
             )))
         ));
@@ -631,7 +630,7 @@ fn tuples_system() {
 
     for test in type_error_tests.iter() {
         let expected_type_error = match execute(test) {
-            Err(ClarityEvalError::Vm(VmExecutionError::Unchecked(
+            Err(ClarityError::Interpreter(VmExecutionError::Unchecked(
                 CheckErrorKind::TypeValueError(_, _),
             ))) => true,
             _ => {
@@ -653,7 +652,7 @@ fn bad_define_maps() {
         "(define-map lists { name: int } contents 5)",
         "(define-map lists { name: int } { contents: (list 5 0 int) })",
     ];
-    let expected: Vec<ClarityEvalError> = vec![
+    let expected: Vec<ClarityError> = vec![
         CheckErrorKind::BadSyntaxBinding(SyntaxBindingError::tuple_cons_invalid_length(0)).into(),
         CheckErrorKind::UnknownTypeName("contents".to_string()).into(),
         CheckErrorKind::ExpectedName.into(),
@@ -779,7 +778,7 @@ fn test_non_tuple_map_get_set() {
 
     for test in type_error_tests.iter() {
         let expected_type_error = match execute(test) {
-            Err(ClarityEvalError::Vm(VmExecutionError::Unchecked(
+            Err(ClarityError::Interpreter(VmExecutionError::Unchecked(
                 CheckErrorKind::TypeValueError(_, _),
             ))) => true,
             _ => {

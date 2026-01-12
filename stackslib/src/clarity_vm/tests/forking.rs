@@ -14,8 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 use clarity::vm::analysis::errors::CheckErrorKind;
+use clarity::vm::clarity::ClarityError;
 use clarity::vm::contexts::OwnedEnvironment;
-use clarity::vm::errors::{ClarityEvalError, RuntimeError, VmExecutionError};
+use clarity::vm::errors::{RuntimeError, VmExecutionError};
 use clarity::vm::test_util::{
     execute, is_committed, is_err_code, symbols_from_values, TEST_BURN_STATE_DB, TEST_HEADER_DB,
 };
@@ -218,7 +219,7 @@ fn test_at_block_missing_defines(#[case] version: ClarityVersion, #[case] epoch:
         owned_env.initialize_contract(c_a, contract, None).unwrap();
     }
 
-    fn initialize_2(owned_env: &mut OwnedEnvironment) -> ClarityEvalError {
+    fn initialize_2(owned_env: &mut OwnedEnvironment) -> ClarityError {
         let c_b = QualifiedContractIdentifier::local("contract-b").unwrap();
 
         let contract = "(define-private (problematic-cc)

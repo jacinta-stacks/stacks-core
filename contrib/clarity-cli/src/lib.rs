@@ -22,12 +22,13 @@ use clarity::vm::analysis::contract_interface_builder::build_contract_interface;
 use clarity::vm::analysis::{AnalysisDatabase, ContractAnalysis};
 use clarity::vm::ast::build_ast;
 use clarity::vm::ast::errors::ParseError;
+use clarity::vm::clarity::ClarityError;
 use clarity::vm::contexts::{AssetMap, GlobalContext, OwnedEnvironment};
 use clarity::vm::costs::{ExecutionCost, LimitedCostTracker};
 use clarity::vm::database::{
     BurnStateDB, ClarityDatabase, HeadersDB, NULL_BURN_STATE_DB, STXBalance,
 };
-use clarity::vm::errors::{ClarityEvalError, StaticCheckError, VmExecutionError};
+use clarity::vm::errors::{StaticCheckError, VmExecutionError};
 use clarity::vm::events::StacksTransactionEvent;
 use clarity::vm::types::{PrincipalData, QualifiedContractIdentifier};
 use clarity::vm::{
@@ -435,7 +436,7 @@ pub fn vm_execute_in_epoch(
     program: &str,
     clarity_version: ClarityVersion,
     epoch: StacksEpochId,
-) -> Result<Option<Value>, ClarityEvalError> {
+) -> Result<Option<Value>, ClarityError> {
     let contract_id = QualifiedContractIdentifier::transient();
     let mut contract_context = ContractContext::new(contract_id.clone(), clarity_version);
     let mut marf = MemoryBackingStore::new();
@@ -451,7 +452,7 @@ pub fn vm_execute_in_epoch(
         ast::build_ast(&contract_id, program, &mut (), clarity_version, epoch)?.expressions;
     global_context
         .execute(|g| eval_all(&parsed, &mut contract_context, g, None))
-        .map_err(ClarityEvalError::from)
+        .map_err(ClarityError::from)
 }
 
 /// Execute program in a transient environment in the latest epoch.
@@ -460,7 +461,7 @@ pub fn vm_execute_in_epoch(
 pub fn vm_execute(
     program: &str,
     clarity_version: ClarityVersion,
-) -> Result<Option<Value>, ClarityEvalError> {
+) -> Result<Option<Value>, ClarityError> {
     vm_execute_in_epoch(program, clarity_version, StacksEpochId::latest())
 }
 

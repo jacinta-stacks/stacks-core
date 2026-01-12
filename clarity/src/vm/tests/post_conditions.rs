@@ -29,8 +29,9 @@ use proptest::test_runner::{TestCaseError, TestCaseResult};
 
 use crate::vm::ClarityVersion;
 use crate::vm::analysis::type_checker::v2_1::natives::post_conditions::MAX_ALLOWANCES;
+use crate::vm::clarity::ClarityError;
 use crate::vm::contexts::AssetMap;
-use crate::vm::errors::{ClarityEvalError, EarlyReturnError, VmExecutionError};
+use crate::vm::errors::{EarlyReturnError, VmExecutionError};
 use crate::vm::tests::proptest_utils::{
     allowance_list_snippets, begin_block, body_with_allowances_snippets,
     clarity_values_no_response, execute, execute_and_check, execute_and_check_versioned,
@@ -724,7 +725,7 @@ fn test_as_contract_with_error_in_body() {
   )
 )"#;
     let expected_err = Value::error(Value::UInt(200)).unwrap();
-    let short_return: ClarityEvalError =
+    let short_return: ClarityError =
         VmExecutionError::EarlyReturn(EarlyReturnError::UnwrapFailed(expected_err.into())).into();
     assert_eq!(short_return, execute(snippet).unwrap_err());
 }
@@ -769,7 +770,7 @@ fn test_as_contract_good_transfer_with_short_return_in_body() {
 )"#;
     let sender = StandardPrincipalData::transient();
     let expected_err = Value::error(Value::UInt(200)).unwrap();
-    let short_return: ClarityEvalError =
+    let short_return: ClarityError =
         VmExecutionError::EarlyReturn(EarlyReturnError::UnwrapFailed(expected_err.into())).into();
     let res = execute(snippet).expect_err("execution passed unexpectedly");
     assert_eq!(short_return, res);
@@ -813,7 +814,7 @@ fn test_as_contract_good_transfer_with_early_return_ok_in_body() {
   true
 )"#;
     let expected_err = Value::okay(Value::Bool(false)).unwrap();
-    let short_return: ClarityEvalError =
+    let short_return: ClarityError =
         VmExecutionError::EarlyReturn(EarlyReturnError::AssertionFailed(expected_err.into()))
             .into();
     let err = execute(snippet).expect_err("execution passed unexpectedly");
@@ -1474,7 +1475,7 @@ fn test_restrict_assets_with_error_in_body() {
   )
 )"#;
     let expected_err = Value::error(Value::UInt(200)).unwrap();
-    let short_return: ClarityEvalError =
+    let short_return: ClarityError =
         VmExecutionError::EarlyReturn(EarlyReturnError::UnwrapFailed(expected_err.into())).into();
     assert_eq!(short_return, execute(snippet).unwrap_err());
 }
@@ -1560,7 +1561,7 @@ fn test_nested_inner_restrict_assets_with_stx_exceeds() {
   ))
 )"#;
     let expected_err = Value::error(Value::UInt(0)).unwrap();
-    let short_return: ClarityEvalError =
+    let short_return: ClarityError =
         VmExecutionError::EarlyReturn(EarlyReturnError::UnwrapFailed(expected_err.into())).into();
     assert_eq!(short_return, execute(snippet).unwrap_err());
 }
@@ -1603,7 +1604,7 @@ fn test_restrict_assets_good_transfer_with_short_return_in_body() {
 )"#;
     let sender = StandardPrincipalData::transient();
     let expected_err = Value::error(Value::UInt(200)).unwrap();
-    let short_return: ClarityEvalError =
+    let short_return: ClarityError =
         VmExecutionError::EarlyReturn(EarlyReturnError::UnwrapFailed(expected_err.into())).into();
     let res = execute(snippet).expect_err("execution passed unexpectedly");
     assert_eq!(short_return, res);
@@ -1645,7 +1646,7 @@ fn test_restrict_assets_good_transfer_with_short_return_ok_in_body() {
   true
 )"#;
     let expected_err = Value::okay(Value::Bool(false)).unwrap();
-    let short_return: ClarityEvalError =
+    let short_return: ClarityError =
         VmExecutionError::EarlyReturn(EarlyReturnError::AssertionFailed(expected_err.into()))
             .into();
     let err = execute(snippet).expect_err("execution passed unexpectedly");
@@ -1663,7 +1664,7 @@ fn restrict_assets_too_many_allowances() {
             .collect::<Vec<_>>()
             .join(" ")
     );
-    let max_allowances_err: ClarityEvalError = VmExecutionError::Unchecked(
+    let max_allowances_err: ClarityError = VmExecutionError::Unchecked(
         CheckErrorKind::TooManyAllowances(MAX_ALLOWANCES, MAX_ALLOWANCES + 1),
     )
     .into();
@@ -1679,7 +1680,7 @@ fn expected_allowance_expr_error() {
     // Construct a "fake" allowance expression that is invalid
     let snippet = "(restrict-assets? tx-sender ((bad-fn u1)) true)";
 
-    let expected_error: ClarityEvalError =
+    let expected_error: ClarityError =
         VmExecutionError::Unchecked(CheckErrorKind::ExpectedAllowanceExpr("bad-fn".to_string()))
             .into();
 
@@ -1697,7 +1698,7 @@ fn expected_allowance_expr_error_unhandled_native() {
     // For example: `tx-sender` (or `caller`), which is a native function but not a handled allowance
     let snippet = "(restrict-assets? tx-sender ((tx-sender u1)) true)";
 
-    let expected_error: ClarityEvalError = VmExecutionError::Unchecked(
+    let expected_error: ClarityError = VmExecutionError::Unchecked(
         CheckErrorKind::ExpectedAllowanceExpr("tx-sender".to_string()),
     )
     .into();
@@ -1713,7 +1714,7 @@ fn expected_allowance_expr_error_unhandled_native() {
 fn allowance_expr_not_allowed() {
     let snippet = "(with-stx u1)";
 
-    let expected: ClarityEvalError =
+    let expected: ClarityError =
         VmExecutionError::Unchecked(CheckErrorKind::AllowanceExprNotAllowed).into();
 
     let err = execute(snippet).expect_err("execution unexpectedly succeeded");
@@ -1732,7 +1733,7 @@ fn restrict_assets_expected_list_of_allowances() {
             (ok u1)
         )
     "#;
-    let expected_error: ClarityEvalError = VmExecutionError::Unchecked(
+    let expected_error: ClarityError = VmExecutionError::Unchecked(
         CheckErrorKind::ExpectedListOfAllowances("restrict-assets?".into(), 2),
     )
     .into();
@@ -1754,7 +1755,7 @@ fn as_contract_expected_list_of_allowances() {
     "#;
 
     // The argument is `u42` (not a list), so we expect this error
-    let expected_error: ClarityEvalError = VmExecutionError::Unchecked(
+    let expected_error: ClarityError = VmExecutionError::Unchecked(
         CheckErrorKind::ExpectedListOfAllowances("as-contract?".to_string(), 1),
     )
     .into();
@@ -1769,7 +1770,7 @@ fn execute_with_assets_for_version(
     program: &str,
     version: ClarityVersion,
     sender: StandardPrincipalData,
-) -> (Result<Option<Value>, ClarityEvalError>, Option<AssetMap>) {
+) -> (Result<Option<Value>, ClarityError>, Option<AssetMap>) {
     let mut assets: Option<AssetMap> = None;
 
     let result = execute_and_check_versioned(program, version, sender, |g| {

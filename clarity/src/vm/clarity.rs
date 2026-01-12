@@ -24,21 +24,21 @@ use crate::vm::ast::errors::{ParseError, ParseErrorKind};
 use crate::vm::contexts::{AssetMap, Environment, OwnedEnvironment};
 use crate::vm::costs::{ExecutionCost, LimitedCostTracker};
 use crate::vm::database::ClarityDatabase;
-use crate::vm::errors::{ClarityEvalError, VmExecutionError};
+use crate::vm::errors::{RuntimeError, VmExecutionError};
 use crate::vm::events::StacksTransactionEvent;
 use crate::vm::types::{BuffData, PrincipalData, QualifiedContractIdentifier};
 use crate::vm::{ClarityVersion, ContractContext, SymbolicExpression, Value, analysis, ast};
 
 /// Top-level error type for Clarity contract processing, encompassing errors from parsing,
 /// type-checking, runtime evaluation, and transaction execution.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ClarityError {
     /// Error during static type-checking or semantic analysis.
     /// The `StaticCheckError` wraps the specific type-checking error, including diagnostic details.
-    StaticCheck(StaticCheckError),
+    StaticCheck(Box<StaticCheckError>),
     /// Error during lexical or syntactic parsing.
     /// The `ParseError` wraps the specific parsing error, such as invalid syntax or tokens.
-    Parse(ParseError),
+    Parse(Box<ParseError>),
     /// Error during runtime evaluation in the virtual machine.
     /// The `VmExecutionError` wraps the specific error, such as runtime errors or dynamic type-checking errors.
     Interpreter(VmExecutionError),
@@ -105,17 +105,14 @@ impl From<StaticCheckError> for ClarityError {
             StaticCheckErrorKind::ExecutionTimeExpired => {
                 ClarityError::CostError(ExecutionCost::max_value(), ExecutionCost::max_value())
             }
-            _ => ClarityError::StaticCheck(e),
+            _ => ClarityError::StaticCheck(Box::new(e)),
         }
     }
 }
 
-impl From<ClarityEvalError> for ClarityError {
-    fn from(e: ClarityEvalError) -> Self {
-        match e {
-            ClarityEvalError::Parse(err) => ClarityError::Parse(err),
-            ClarityEvalError::Vm(err) => ClarityError::Interpreter(err),
-        }
+impl From<CheckErrorKind> for ClarityError {
+    fn from(e: CheckErrorKind) -> Self {
+        ClarityError::Interpreter(VmExecutionError::from(e))
     }
 }
 
@@ -171,8 +168,21 @@ impl From<ParseError> for ClarityError {
             ParseErrorKind::ExecutionTimeExpired => {
                 ClarityError::CostError(ExecutionCost::max_value(), ExecutionCost::max_value())
             }
-            _ => ClarityError::Parse(e),
+            _ => ClarityError::Parse(Box::new(e)),
         }
+    }
+}
+
+impl From<ParseErrorKind> for ClarityError {
+    fn from(e: ParseErrorKind) -> Self {
+        let parse_error: ParseError = e.into();
+        ClarityError::from(parse_error)
+    }
+}
+
+impl From<RuntimeError> for ClarityError {
+    fn from(e: RuntimeError) -> Self {
+        ClarityError::Interpreter(VmExecutionError::from(e))
     }
 }
 
@@ -203,9 +213,9 @@ pub trait ClarityConnection {
         sponsor: Option<PrincipalData>,
         cost_track: LimitedCostTracker,
         to_do: F,
-    ) -> Result<R, ClarityEvalError>
+    ) -> Result<R, ClarityError>
     where
-        F: FnOnce(&mut Environment) -> Result<R, ClarityEvalError>,
+        F: FnOnce(&mut Environment) -> Result<R, ClarityError>,
     {
         let epoch_id = self.get_epoch();
         let clarity_version = ClarityVersion::default_for_epoch(epoch_id);

@@ -1,5 +1,5 @@
 // Copyright (C) 2013-2020 Blockstack PBC, a public benefit corporation
-// Copyright (C) 2020 Stacks Open Internet Foundation
+// Copyright (C) 2020-2026 Stacks Open Internet Foundation
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ use clarity::vm::errors::VmExecutionError;
 use clarity::vm::types::{QualifiedContractIdentifier, Value};
 
 use crate::chainstate::stacks::db::*;
-use crate::chainstate::stacks::{Error, *};
+use crate::chainstate::stacks::Error;
 use crate::clarity_vm::clarity::ClarityConnection;
 
 impl StacksChainState {

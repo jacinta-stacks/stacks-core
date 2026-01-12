@@ -23,7 +23,7 @@ use clarity::vm::analysis::CheckErrorKind;
 use clarity::vm::clarity::{ClarityError, TransactionConnection};
 use clarity::vm::costs::LimitedCostTracker;
 use clarity::vm::database::{ClarityDatabase, NULL_BURN_STATE_DB, NULL_HEADER_DB};
-use clarity::vm::errors::{ClarityEvalError, VmExecutionError};
+use clarity::vm::errors::VmExecutionError;
 use clarity::vm::events::StacksTransactionEvent;
 use clarity::vm::representations::ContractName;
 use clarity::vm::types::{
@@ -702,7 +702,7 @@ impl StacksChainState {
                                 &[SymbolicExpression::atom_value(Value::UInt(reward_cycle))],
                                 true,
                             )
-                            .map_err(ClarityEvalError::from)
+                            .map_err(ClarityError::from)
                         },
                     )
                 },

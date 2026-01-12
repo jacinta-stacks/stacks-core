@@ -20,7 +20,8 @@ use stacks_common::util::hash::{Sha256Sum, to_hex};
 use stacks_common::util::secp256k1::MessageSignature as Secp256k1Signature;
 use stacks_common::util::secp256r1::{Secp256r1PrivateKey, Secp256r1PublicKey};
 
-use crate::vm::errors::{ClarityEvalError, VmExecutionError};
+use crate::vm::clarity::ClarityError;
+use crate::vm::errors::VmExecutionError;
 use crate::vm::types::{ResponseData, TypeSignature, Value};
 use crate::vm::{ClarityVersion, execute_with_parameters};
 
@@ -178,7 +179,7 @@ fn test_secp256r1_verify_signature_too_long_errors() {
     )
     .unwrap_err();
     match err {
-        ClarityEvalError::Vm(VmExecutionError::Unchecked(CheckErrorKind::TypeValueError(
+        ClarityError::Interpreter(VmExecutionError::Unchecked(CheckErrorKind::TypeValueError(
             expected,
             _,
         ))) => {
@@ -331,7 +332,7 @@ fn test_secp256k1_verify_signature_too_long_errors() {
     )
     .unwrap_err();
     match err {
-        ClarityEvalError::Vm(VmExecutionError::Unchecked(CheckErrorKind::TypeValueError(
+        ClarityError::Interpreter(VmExecutionError::Unchecked(CheckErrorKind::TypeValueError(
             expected,
             _,
         ))) => {

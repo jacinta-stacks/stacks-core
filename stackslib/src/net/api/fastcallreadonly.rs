@@ -17,9 +17,8 @@ use std::time::Duration;
 
 use clarity::vm::analysis::CheckErrorKind;
 use clarity::vm::ast::parser::v1::CLARITY_NAME_REGEX;
-use clarity::vm::clarity::ClarityConnection;
+use clarity::vm::clarity::{ClarityConnection, ClarityError};
 use clarity::vm::costs::{ExecutionCost, LimitedCostTracker};
-use clarity::vm::errors::ClarityEvalError;
 use clarity::vm::errors::VmExecutionError::Unchecked;
 use clarity::vm::representations::{CONTRACT_NAME_REGEX_STRING, STANDARD_PRINCIPAL_REGEX_STRING};
 use clarity::vm::types::PrincipalData;
@@ -247,7 +246,7 @@ impl RPCRequestHandler for RPCFastCallReadOnlyRequestHandler {
                                     &args,
                                     false,
                                 )
-                                .map_err(ClarityEvalError::from)
+                                .map_err(ClarityError::from)
                             },
                         )
                     },
@@ -268,7 +267,7 @@ impl RPCRequestHandler for RPCFastCallReadOnlyRequestHandler {
                 }
             }
             Ok(Some(Err(e))) => match e {
-                ClarityEvalError::Vm(Unchecked(CheckErrorKind::CostBalanceExceeded(
+                ClarityError::Interpreter(Unchecked(CheckErrorKind::CostBalanceExceeded(
                     actual_cost,
                     _,
                 ))) if actual_cost.write_count > 0 => CallReadOnlyResponse {
@@ -276,7 +275,7 @@ impl RPCRequestHandler for RPCFastCallReadOnlyRequestHandler {
                     result: None,
                     cause: Some("NotReadOnly".to_string()),
                 },
-                ClarityEvalError::Vm(Unchecked(CheckErrorKind::ExecutionTimeExpired)) => {
+                ClarityError::Interpreter(Unchecked(CheckErrorKind::ExecutionTimeExpired)) => {
                     return StacksHttpResponse::new_error(
                         &preamble,
                         &HttpRequestTimeout::new("ExecutionTime expired".to_string()),

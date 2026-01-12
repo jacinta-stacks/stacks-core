@@ -25,8 +25,9 @@ use crate::vm::types::{PrincipalData, QualifiedContractIdentifier, Value};
 #[cfg(test)]
 use crate::vm::{
     ContractContext,
+    clarity::ClarityError,
     contexts::AssetMapEntry,
-    errors::{CheckErrorKind, ClarityEvalError, RuntimeError},
+    errors::{CheckErrorKind, RuntimeError},
     tests::{
         TopLevelMemoryEnvironmentGenerator, execute, is_committed, is_err_code,
         symbols_from_values, tl_env_factory as env_factory,
@@ -835,7 +836,7 @@ fn test_total_supply(epoch: StacksEpochId, mut env_factory: TopLevelMemoryEnviro
         .unwrap_err();
     assert!(matches!(
         err,
-        ClarityEvalError::Vm(VmExecutionError::Unchecked(CheckErrorKind::TypeValueError(
+        ClarityError::Interpreter(VmExecutionError::Unchecked(CheckErrorKind::TypeValueError(
             _,
             _
         )))
@@ -846,7 +847,7 @@ fn test_total_supply(epoch: StacksEpochId, mut env_factory: TopLevelMemoryEnviro
         .unwrap_err();
     assert!(matches!(
         err,
-        ClarityEvalError::Vm(VmExecutionError::Unchecked(CheckErrorKind::TypeValueError(
+        ClarityError::Interpreter(VmExecutionError::Unchecked(CheckErrorKind::TypeValueError(
             _,
             _
         )))
